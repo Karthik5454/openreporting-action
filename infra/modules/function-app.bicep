@@ -5,9 +5,6 @@ param location string
 @description('The name of the function app')
 param functionAppName string
 
-@description('The environment name')
-param environmentName string
-
 @description('The name of the storage account')
 param storageAccountName string
 
@@ -47,7 +44,8 @@ resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
           type: 'blobContainer'
           value: '${storageAccount.properties.primaryEndpoints.blob}deployments'
           authentication: {
-            type: 'SystemAssignedIdentity'
+            type: 'StorageAccountConnectionString'
+            storageAccountConnectionStringName: 'DEPLOYMENT_STORAGE_CONNECTION_STRING'
           }
         }
       }
@@ -68,8 +66,12 @@ resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
     siteConfig: {
       appSettings: [
         {
-          name: 'AzureWebJobsStorage__accountName'
-          value: storageAccountName
+          name: 'AzureWebJobsStorage'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+        }
+        {
+          name: 'DEPLOYMENT_STORAGE_CONNECTION_STRING'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
         }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -105,17 +107,6 @@ resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
     }
-  }
-}
-
-// Assign Storage Blob Data Contributor role to Function App's managed identity
-resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(storageAccount.id, functionApp.id, 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
-  scope: storageAccount
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe') // Storage Blob Data Contributor
-    principalId: functionApp.identity.principalId
-    principalType: 'ServicePrincipal'
   }
 }
 

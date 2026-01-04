@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  RESOURCE_GROUP: 'f1-19cbd54c-playground-sandbox'
+  RESOURCE_GROUP: '1-19cbd54c-playground-sandbox'
   ENVIRONMENT_NAME: 'prod'
   FUNCTION_APP_NAME: 'func-openai-reporting'
   LOCATION: 'eastus'

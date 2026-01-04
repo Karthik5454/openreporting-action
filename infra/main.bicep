@@ -51,7 +51,6 @@ module functionApp 'modules/function-app.bicep' = {
   params: {
     location: location
     functionAppName: functionAppName
-    environmentName: environmentName
     storageAccountName: storage.outputs.storageAccountName
     appInsightsConnectionString: appInsights.outputs.connectionString
     appInsightsInstrumentationKey: appInsights.outputs.instrumentationKey

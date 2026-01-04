@@ -1,0 +1,55 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  RESOURCE_GROUP: 'f1-19cbd54c-playground-sandbox'
+  ENVIRONMENT_NAME: 'prod'
+  FUNCTION_APP_NAME: 'func-openai-reporting'
+  LOCATION: 'eastus'
+
+jobs:
+  deploy-infrastructure:
+    name: Deploy Azure Infrastructure
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    outputs:
+      functionAppName: ${{ steps.bicep-deploy.outputs.functionAppName }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Deploy Bicep template
+        id: bicep-deploy
+        uses: azure/arm-deploy@v2
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ env.RESOURCE_GROUP }}
+          template: ./infra/main.bicep
+          parameters: >
+            environmentName=${{ env.ENVIRONMENT_NAME }}
+            functionAppName=${{ env.FUNCTION_APP_NAME }}
+            location=${{ env.LOCATION }}
+          failOnStdErr: false
+
+      - name: Output deployed resources
+        run: |
+          echo "Function App Name: ${{ steps.bicep-deploy.outputs.functionAppName }}"
+          echo "Deployment complete!"
+
+      - name: Azure Logout
+        run: az logout
+        if: always()
